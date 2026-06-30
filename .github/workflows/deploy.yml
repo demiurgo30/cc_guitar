@@ -2,7 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/guitar-practice-journal-2ekqto, main]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,17 +23,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: GuitarJournal/package-lock.json
 
       - name: Install dependencies
         working-directory: GuitarJournal
-        run: npm ci
+        run: npm install
 
       - name: Export Expo web build
         working-directory: GuitarJournal
         run: npx expo export --platform web
         env:
+          EXPO_NO_TELEMETRY: 1
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload Pages artifact
