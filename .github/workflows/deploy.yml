@@ -30,6 +30,7 @@ jobs:
         run: npm ci
         
       - name: Ensure Web Dependencies are Present
+        working-directory: GuitarJournal
         run: npx expo install react-native-web react-dom
 
       - name: Export Expo web build
