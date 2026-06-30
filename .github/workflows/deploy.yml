@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         working-directory: GuitarJournal
         run: npm ci
+        
+      - name: Ensure Web Dependencies are Present
+        run: npx expo install react-native-web react-dom
 
       - name: Export Expo web build
         working-directory: GuitarJournal
