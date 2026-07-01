@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { addSession, getSongs, upsertSong, getDurationPresets, getTechniques } from '../storage';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
+import { showAlert } from '../utils/alert';
 
 function TagPill({ label, active, onPress }) {
   return (
@@ -73,7 +74,7 @@ export default function LogSessionScreen({ navigation }) {
       }
     }
 
-    Alert.alert('Session saved!', `${mins} minutes logged.`, [
+    showAlert('Session saved!', `${mins} minutes logged.`, [
       { text: 'OK', onPress: () => navigation.navigate('Home') },
     ]);
 

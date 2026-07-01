@@ -1,9 +1,10 @@
 import React, { useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing } from '../theme';
 import { exportAllData, importAllData } from '../storage';
+import { showAlert } from '../utils/alert';
 
 const ITEMS = [
   { key: 'Durations', label: 'Durations', desc: 'Manage quick-pick session lengths', icon: '⏱️' },
@@ -23,32 +24,12 @@ function downloadJson(obj, filename) {
   URL.revokeObjectURL(url);
 }
 
-// react-native-web's Alert.alert is a no-op, so use the browser's dialogs there.
-function notify(title, message) {
-  if (Platform.OS === 'web') {
-    window.alert(message ? `${title}\n\n${message}` : title);
-  } else {
-    Alert.alert(title, message);
-  }
-}
-
-function confirmDestructive(title, message, onConfirm) {
-  if (Platform.OS === 'web') {
-    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
-  } else {
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Import', style: 'destructive', onPress: onConfirm },
-    ]);
-  }
-}
-
 export default function SettingsScreen({ navigation }) {
   const fileInputRef = useRef(null);
 
   const handleExport = async () => {
     if (Platform.OS !== 'web') {
-      notify('Web only', 'Export is currently only available in the browser.');
+      showAlert('Web only', 'Export is currently only available in the browser.');
       return;
     }
     try {
@@ -56,13 +37,13 @@ export default function SettingsScreen({ navigation }) {
       const date = new Date().toISOString().slice(0, 10);
       downloadJson(backup, `guitar-journal-backup-${date}.json`);
     } catch (e) {
-      notify('Export failed', e.message ?? 'Something went wrong.');
+      showAlert('Export failed', e.message ?? 'Something went wrong.');
     }
   };
 
   const handleImportPress = () => {
     if (Platform.OS !== 'web') {
-      notify('Web only', 'Import is currently only available in the browser.');
+      showAlert('Web only', 'Import is currently only available in the browser.');
       return;
     }
     fileInputRef.current?.click();
@@ -79,21 +60,28 @@ export default function SettingsScreen({ navigation }) {
       try {
         parsed = JSON.parse(reader.result);
       } catch {
-        notify('Import failed', 'That file is not valid JSON.');
+        showAlert('Import failed', 'That file is not valid JSON.');
         return;
       }
 
-      confirmDestructive(
+      showAlert(
         'Replace all data?',
         'Importing will overwrite all existing sessions, songs, goals, durations, and techniques with the contents of this file.',
-        async () => {
-          try {
-            await importAllData(parsed);
-            notify('Import complete', 'Your data has been restored.');
-          } catch (e) {
-            notify('Import failed', e.message ?? 'Something went wrong.');
-          }
-        }
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Import',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await importAllData(parsed);
+                showAlert('Import complete', 'Your data has been restored.');
+              } catch (e) {
+                showAlert('Import failed', e.message ?? 'Something went wrong.');
+              }
+            },
+          },
+        ]
       );
     };
     reader.readAsText(file);

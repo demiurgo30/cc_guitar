@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getGoals, addGoal, toggleGoal, deleteGoal } from '../storage';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
+import { showAlert } from '../utils/alert';
 
 function GoalRow({ goal, onToggle, onDelete }) {
   return (
@@ -42,7 +43,7 @@ export default function GoalsScreen() {
   };
 
   const handleDelete = id => {
-    Alert.alert('Delete goal?', '', [
+    showAlert('Delete goal?', '', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => { await deleteGoal(id); setGoals(await getGoals()); } },
     ]);

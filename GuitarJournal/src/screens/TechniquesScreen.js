@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../storage';
 import Card from '../components/Card';
 import { colors, spacing, radius } from '../theme';
+import { showAlert } from '../utils/alert';
 
 export default function TechniquesScreen() {
   const [techniques, setTechniques] = useState([]);
@@ -29,14 +30,14 @@ export default function TechniquesScreen() {
 
   const saveEdit = async () => {
     const name = editText.trim();
-    if (!name) { Alert.alert('Name cannot be empty'); return; }
+    if (!name) { showAlert('Name cannot be empty'); return; }
     setTechniques(await updateTechnique(editingValue, name));
     setEditingValue(null);
     setEditText('');
   };
 
   const handleDelete = value => {
-    Alert.alert('Delete technique?', `Remove "${value}" from the picker.`, [
+    showAlert('Delete technique?', `Remove "${value}" from the picker.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => setTechniques(await deleteTechnique(value)) },
     ]);

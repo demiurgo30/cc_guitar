@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert, Modal,
+  TextInput, Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSongs, upsertSong, deleteSong } from '../storage';
 import Card from '../components/Card';
 import { colors, spacing, radius } from '../theme';
+import { showAlert } from '../utils/alert';
 
 const DIMS = ['speed', 'changes', 'musicality'];
 const DIM_LABELS = { speed: 'Speed', changes: 'Changes', musicality: 'Musicality' };
@@ -43,7 +44,7 @@ function SongModal({ visible, song, onClose, onSave }) {
   }, [song, visible]);
 
   const handleSave = () => {
-    if (!name.trim()) { Alert.alert('Name required'); return; }
+    if (!name.trim()) { showAlert('Name required'); return; }
     onSave({ ...song, id: song?.id ?? Date.now().toString(), name: name.trim(), status, speed, changes, musicality });
   };
 
@@ -107,7 +108,7 @@ export default function SongsScreen() {
   };
 
   const handleDelete = id => {
-    Alert.alert('Delete song?', 'This cannot be undone.', [
+    showAlert('Delete song?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => { await deleteSong(id); setSongs(await getSongs()); } },
     ]);

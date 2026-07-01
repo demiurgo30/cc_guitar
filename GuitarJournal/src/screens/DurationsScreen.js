@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -9,6 +9,7 @@ import {
 } from '../storage';
 import Card from '../components/Card';
 import { colors, spacing, radius } from '../theme';
+import { showAlert } from '../utils/alert';
 
 function fmt(mins) {
   if (mins < 60) return `${mins} min`;
@@ -26,7 +27,7 @@ export default function DurationsScreen() {
 
   const handleAdd = async () => {
     const mins = parseInt(newValue, 10);
-    if (!mins || mins <= 0) { Alert.alert('Enter a valid number of minutes'); return; }
+    if (!mins || mins <= 0) { showAlert('Enter a valid number of minutes'); return; }
     setPresets(await addDurationPreset(mins));
     setNewValue('');
   };
@@ -35,14 +36,14 @@ export default function DurationsScreen() {
 
   const saveEdit = async () => {
     const mins = parseInt(editText, 10);
-    if (!mins || mins <= 0) { Alert.alert('Enter a valid number of minutes'); return; }
+    if (!mins || mins <= 0) { showAlert('Enter a valid number of minutes'); return; }
     setPresets(await updateDurationPreset(editingValue, mins));
     setEditingValue(null);
     setEditText('');
   };
 
   const handleDelete = value => {
-    Alert.alert('Delete duration?', `Remove ${fmt(value)} from quick-picks.`, [
+    showAlert('Delete duration?', `Remove ${fmt(value)} from quick-picks.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => setPresets(await deleteDurationPreset(value)) },
     ]);
