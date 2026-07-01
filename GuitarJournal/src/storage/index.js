@@ -155,6 +155,46 @@ export async function deleteTechnique(name) {
   return updated;
 }
 
+// ── export / import ──────────────────────────────────────────────
+
+export async function exportAllData() {
+  const [sessions, songs, goals, durations, techniques] = await Promise.all([
+    AsyncStorage.getItem(KEYS.sessions),
+    AsyncStorage.getItem(KEYS.songs),
+    AsyncStorage.getItem(KEYS.goals),
+    AsyncStorage.getItem(KEYS.durations),
+    AsyncStorage.getItem(KEYS.techniques),
+  ]);
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: {
+      sessions: sessions ? JSON.parse(sessions) : [],
+      songs: songs ? JSON.parse(songs) : [],
+      goals: goals ? JSON.parse(goals) : [],
+      durations: durations ? JSON.parse(durations) : [],
+      techniques: techniques ? JSON.parse(techniques) : [],
+    },
+  };
+}
+
+export async function importAllData(parsed) {
+  if (!parsed || typeof parsed !== 'object' || typeof parsed.data !== 'object' || parsed.data === null) {
+    throw new Error('Invalid backup file: missing "data" object.');
+  }
+  const { sessions, songs, goals, durations, techniques } = parsed.data;
+  const writes = [];
+  if (Array.isArray(sessions)) writes.push(save(KEYS.sessions, sessions));
+  if (Array.isArray(songs)) writes.push(save(KEYS.songs, songs));
+  if (Array.isArray(goals)) writes.push(save(KEYS.goals, goals));
+  if (Array.isArray(durations)) writes.push(save(KEYS.durations, durations));
+  if (Array.isArray(techniques)) writes.push(save(KEYS.techniques, techniques));
+  if (writes.length === 0) {
+    throw new Error('Invalid backup file: no recognizable data found.');
+  }
+  await Promise.all(writes);
+}
+
 // ── streak helpers ────────────────────────────────────────────────
 
 export function computeStreak(sessions) {
