@@ -4,13 +4,10 @@ import {
   TextInput, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { addSession, getSongs, upsertSong } from '../storage';
+import { addSession, getSongs, upsertSong, getDurationPresets, getTechniques } from '../storage';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
-
-const DURATIONS = [15, 30, 45, 60, 90];
-const DEFAULT_TECHNIQUES = ['Fingerpicking', 'Strumming', 'Barre chords', 'Scales', 'Legato', 'Chord transitions', 'Arpeggios'];
 
 function TagPill({ label, active, onPress }) {
   return (
@@ -30,19 +27,23 @@ export default function LogSessionScreen({ navigation }) {
   const [songs, setSongs] = useState([]);          // all known songs
   const [selectedSongs, setSelectedSongs] = useState([]);
   const [newSong, setNewSong] = useState('');
-  const [techniques, setTechniques] = useState([]);
+  const [durationPresets, setDurationPresets] = useState([]);
+  const [availableTechniques, setAvailableTechniques] = useState([]);
+  const [selectedTechniques, setSelectedTechniques] = useState([]);
   const [nextTime, setNextTime] = useState('');
   const [teacherQ, setTeacherQ] = useState('');
 
   useFocusEffect(useCallback(() => {
-    getSongs().then(s => setSongs(s));
+    getSongs().then(setSongs);
+    getDurationPresets().then(setDurationPresets);
+    getTechniques().then(setAvailableTechniques);
   }, []));
 
   const toggleSong = name => setSelectedSongs(prev =>
     prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
   );
 
-  const toggleTechnique = t => setTechniques(prev =>
+  const toggleTechnique = t => setSelectedTechniques(prev =>
     prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
   );
 
@@ -58,7 +59,7 @@ export default function LogSessionScreen({ navigation }) {
     const session = {
       durationMinutes: mins,
       songs: selectedSongs,
-      techniques,
+      techniques: selectedTechniques,
       nextTime: nextTime.trim(),
       teacherQuestions: teacherQ.trim(),
     };
@@ -77,7 +78,8 @@ export default function LogSessionScreen({ navigation }) {
     ]);
 
     // reset form
-    setDuration(30); setSelectedSongs([]); setTechniques([]);
+    setDuration(durationPresets[1] ?? durationPresets[0] ?? 30);
+    setSelectedSongs([]); setSelectedTechniques([]);
     setNextTime(''); setTeacherQ(''); setShowCustom(false); setCustomDuration('');
   };
 
@@ -92,7 +94,7 @@ export default function LogSessionScreen({ navigation }) {
         <SectionHeader title="Duration" />
         <Card>
           <View style={styles.durationRow}>
-            {DURATIONS.map(d => (
+            {durationPresets.map(d => (
               <TouchableOpacity
                 key={d}
                 style={[styles.durBtn, !showCustom && duration === d && styles.durBtnActive]}
@@ -159,10 +161,13 @@ export default function LogSessionScreen({ navigation }) {
         <SectionHeader title="Techniques" />
         <Card>
           <View style={styles.tags}>
-            {DEFAULT_TECHNIQUES.map(t => (
-              <TagPill key={t} label={t} active={techniques.includes(t)} onPress={() => toggleTechnique(t)} />
+            {availableTechniques.map(t => (
+              <TagPill key={t} label={t} active={selectedTechniques.includes(t)} onPress={() => toggleTechnique(t)} />
             ))}
           </View>
+          {availableTechniques.length === 0 && (
+            <Text style={styles.hint}>No techniques yet — add some in Settings.</Text>
+          )}
         </Card>
 
         <SectionHeader title="To do next time" />
@@ -219,6 +224,7 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: colors.accentDim, borderRadius: radius.sm, paddingHorizontal: spacing.md, justifyContent: 'center', borderWidth: 1, borderColor: colors.accentBorder },
   addBtnText: { color: colors.accentLight, fontWeight: '600' },
   textArea: { color: colors.text, fontSize: 14, minHeight: 60, textAlignVertical: 'top' },
+  hint: { color: colors.textMuted, fontSize: 12 },
   saveBtn: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md + 2, alignItems: 'center', marginTop: spacing.lg },
   saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
