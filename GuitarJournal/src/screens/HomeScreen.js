@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getSessions, getSongs, getGoals, computeStreak, totalMinutesThisWeek } from '../storage';
+import { getSessions, getSongs, getGoals, getLastLessonReviewedAt, computeStreak, totalMinutesThisWeek } from '../storage';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
@@ -27,13 +27,18 @@ export default function HomeScreen({ navigation }) {
   const [sessions, setSessions] = useState([]);
   const [songs, setSongs] = useState([]);
   const [goals, setGoals] = useState([]);
+  const [pendingLessonCount, setPendingLessonCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [s, sg, g] = await Promise.all([getSessions(), getSongs(), getGoals()]);
+    const [s, sg, g, reviewedAt] = await Promise.all([getSessions(), getSongs(), getGoals(), getLastLessonReviewedAt()]);
     setSessions(s);
     setSongs(sg);
     setGoals(g);
+    const pending = s
+      .filter(sess => !reviewedAt || sess.date > reviewedAt)
+      .filter(sess => (sess.nextTime && sess.nextTime.trim()) || (sess.teacherQuestions && sess.teacherQuestions.trim()));
+    setPendingLessonCount(pending.length);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -87,6 +92,20 @@ export default function HomeScreen({ navigation }) {
       {/* CTA */}
       <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Log')}>
         <Text style={styles.btnText}>+ Log Practice Session</Text>
+      </TouchableOpacity>
+
+      {/* Lesson Mode */}
+      <TouchableOpacity style={styles.lessonCard} onPress={() => navigation.navigate('LessonMode')}>
+        <Text style={styles.lessonIcon}>📋</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.lessonTitle}>Lesson Mode</Text>
+          <Text style={styles.lessonSub}>
+            {pendingLessonCount > 0 ? `${pendingLessonCount} item${pendingLessonCount === 1 ? '' : 's'} pending` : 'All caught up'}
+          </Text>
+        </View>
+        {pendingLessonCount > 0 && (
+          <View style={styles.lessonBadge}><Text style={styles.lessonBadgeText}>{pendingLessonCount}</Text></View>
+        )}
       </TouchableOpacity>
 
       {/* Last session */}
@@ -149,6 +168,12 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 10, color: colors.textSub, marginTop: 2 },
   btn: { backgroundColor: colors.accent, borderRadius: radius.md, padding: spacing.md + 2, alignItems: 'center', marginBottom: spacing.md },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  lessonCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
+  lessonIcon: { fontSize: 24 },
+  lessonTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  lessonSub: { fontSize: 12, color: colors.textSub, marginTop: 2 },
+  lessonBadge: { backgroundColor: colors.accent, borderRadius: 12, minWidth: 22, height: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  lessonBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs },
   histDate: { fontSize: 13, fontWeight: '600', color: colors.text },
   histDur: { fontSize: 13, fontWeight: '700', color: colors.accentLight },

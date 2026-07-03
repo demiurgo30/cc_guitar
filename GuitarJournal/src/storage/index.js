@@ -6,7 +6,12 @@ const KEYS = {
   goals: 'gj_goals',
   durations: 'gj_durations',
   techniques: 'gj_techniques',
+  lastLessonReviewedAt: 'gj_lastLessonReviewedAt',
+  reminderSettings: 'gj_reminderSettings',
+  lastReminderShownDate: 'gj_lastReminderShownDate',
 };
+
+const DEFAULT_REMINDER_SETTINGS = { enabled: false, hour: 18, minute: 0 };
 
 const DEFAULT_DURATIONS = [15, 30, 45, 60, 90];
 const DEFAULT_TECHNIQUES = ['Fingerpicking', 'Strumming', 'Barre chords', 'Scales', 'Legato', 'Chord transitions', 'Arpeggios'];
@@ -53,10 +58,22 @@ export async function getSongs() {
 export async function upsertSong(song) {
   const list = await getSongs();
   const idx = list.findIndex(s => s.id === song.id);
+  const now = new Date().toISOString();
+
   if (idx >= 0) {
-    list[idx] = song;
+    const prev = list[idx];
+    const ratingsChanged = prev.speed !== song.speed || prev.changes !== song.changes || prev.musicality !== song.musicality;
+    const history = prev.history ?? [];
+    list[idx] = {
+      ...song,
+      history: ratingsChanged
+        ? [...history, { date: now, speed: song.speed ?? 0, changes: song.changes ?? 0, musicality: song.musicality ?? 0 }]
+        : history,
+    };
   } else {
-    list.push({ ...song, id: song.id ?? Date.now().toString() });
+    const entry = { ...song, id: song.id ?? Date.now().toString() };
+    entry.history = [{ date: now, speed: entry.speed ?? 0, changes: entry.changes ?? 0, musicality: entry.musicality ?? 0 }];
+    list.push(entry);
   }
   await save(KEYS.songs, list);
 }
@@ -155,18 +172,51 @@ export async function deleteTechnique(name) {
   return updated;
 }
 
+// ── lesson mode ───────────────────────────────────────────────────
+
+export async function getLastLessonReviewedAt() {
+  return AsyncStorage.getItem(KEYS.lastLessonReviewedAt);
+}
+
+export async function markLessonReviewed() {
+  const now = new Date().toISOString();
+  await AsyncStorage.setItem(KEYS.lastLessonReviewedAt, now);
+  return now;
+}
+
+// ── reminders ─────────────────────────────────────────────────────
+
+export async function getReminderSettings() {
+  const raw = await AsyncStorage.getItem(KEYS.reminderSettings);
+  return raw ? { ...DEFAULT_REMINDER_SETTINGS, ...JSON.parse(raw) } : DEFAULT_REMINDER_SETTINGS;
+}
+
+export async function saveReminderSettings(settings) {
+  await AsyncStorage.setItem(KEYS.reminderSettings, JSON.stringify(settings));
+}
+
+export async function getLastReminderShownDate() {
+  return AsyncStorage.getItem(KEYS.lastReminderShownDate);
+}
+
+export async function setLastReminderShownDate(dateStr) {
+  await AsyncStorage.setItem(KEYS.lastReminderShownDate, dateStr);
+}
+
 // ── export / import ──────────────────────────────────────────────
 
 export async function exportAllData() {
-  const [sessions, songs, goals, durations, techniques] = await Promise.all([
+  const [sessions, songs, goals, durations, techniques, lastLessonReviewedAt, reminderSettings] = await Promise.all([
     AsyncStorage.getItem(KEYS.sessions),
     AsyncStorage.getItem(KEYS.songs),
     AsyncStorage.getItem(KEYS.goals),
     AsyncStorage.getItem(KEYS.durations),
     AsyncStorage.getItem(KEYS.techniques),
+    AsyncStorage.getItem(KEYS.lastLessonReviewedAt),
+    AsyncStorage.getItem(KEYS.reminderSettings),
   ]);
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data: {
       sessions: sessions ? JSON.parse(sessions) : [],
@@ -174,6 +224,8 @@ export async function exportAllData() {
       goals: goals ? JSON.parse(goals) : [],
       durations: durations ? JSON.parse(durations) : [],
       techniques: techniques ? JSON.parse(techniques) : [],
+      lastLessonReviewedAt: lastLessonReviewedAt ?? null,
+      reminderSettings: reminderSettings ? JSON.parse(reminderSettings) : DEFAULT_REMINDER_SETTINGS,
     },
   };
 }
@@ -182,13 +234,16 @@ export async function importAllData(parsed) {
   if (!parsed || typeof parsed !== 'object' || typeof parsed.data !== 'object' || parsed.data === null) {
     throw new Error('Invalid backup file: missing "data" object.');
   }
-  const { sessions, songs, goals, durations, techniques } = parsed.data;
+  const { sessions, songs, goals, durations, techniques, lastLessonReviewedAt, reminderSettings } = parsed.data;
   const writes = [];
   if (Array.isArray(sessions)) writes.push(save(KEYS.sessions, sessions));
   if (Array.isArray(songs)) writes.push(save(KEYS.songs, songs));
   if (Array.isArray(goals)) writes.push(save(KEYS.goals, goals));
   if (Array.isArray(durations)) writes.push(save(KEYS.durations, durations));
   if (Array.isArray(techniques)) writes.push(save(KEYS.techniques, techniques));
+  // version 1 backups won't have these — only write if present, so imports of older files don't clobber current settings
+  if (typeof lastLessonReviewedAt === 'string') writes.push(AsyncStorage.setItem(KEYS.lastLessonReviewedAt, lastLessonReviewedAt));
+  if (reminderSettings && typeof reminderSettings === 'object') writes.push(save(KEYS.reminderSettings, reminderSettings));
   if (writes.length === 0) {
     throw new Error('Invalid backup file: no recognizable data found.');
   }
@@ -218,4 +273,33 @@ export function totalMinutesThisWeek(sessions) {
   return sessions
     .filter(s => s.date >= weekAgo)
     .reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
+}
+
+export function totalMinutesThisMonth(sessions) {
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+  return sessions
+    .filter(s => s.date >= monthAgo)
+    .reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
+}
+
+// Returns an array of { date: 'YYYY-MM-DD', minutes } covering the last
+// `weeks` weeks up to and including today, oldest first.
+export function buildPracticeHeatmap(sessions, weeks = 16) {
+  const minutesByDay = {};
+  for (const s of sessions) {
+    const day = s.date.slice(0, 10);
+    minutesByDay[day] = (minutesByDay[day] ?? 0) + (s.durationMinutes ?? 0);
+  }
+
+  const days = weeks * 7;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const result = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    result.push({ date: key, minutes: minutesByDay[key] ?? 0 });
+  }
+  return result;
 }

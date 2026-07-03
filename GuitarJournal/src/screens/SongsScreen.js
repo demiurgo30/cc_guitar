@@ -91,7 +91,7 @@ function SongModal({ visible, song, onClose, onSave }) {
   );
 }
 
-export default function SongsScreen() {
+export default function SongsScreen({ navigation }) {
   const [songs, setSongs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -128,8 +128,8 @@ export default function SongsScreen() {
             <Text style={styles.sectionHeader}>{label.toUpperCase()}</Text>
             <Card style={{ padding: 0 }}>
               {list.map((song, i) => (
-                <TouchableOpacity key={song.id} style={[styles.songRow, i === list.length - 1 && { borderBottomWidth: 0 }]} onPress={() => openEdit(song)} onLongPress={() => handleDelete(song.id)}>
-                  <View style={{ flex: 1 }}>
+                <View key={song.id} style={[styles.songRow, i === list.length - 1 && { borderBottomWidth: 0 }]}>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={() => openEdit(song)} onLongPress={() => handleDelete(song.id)}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <Text style={styles.songName}>{song.name}</Text>
                       <View style={[styles.badge, song.status === 'learned' ? styles.badgeLearned : styles.badgeLearning]}>
@@ -146,8 +146,14 @@ export default function SongsScreen() {
                         </View>
                       ))}
                     </View>
-                  </View>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.progressBtn}
+                    onPress={() => navigation.navigate('SongDetail', { songId: song.id })}
+                  >
+                    <Text style={styles.progressBtnText}>📈</Text>
+                  </TouchableOpacity>
+                </View>
               ))}
             </Card>
           </React.Fragment>
@@ -171,7 +177,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 4 },
   subtitle: { fontSize: 13, color: colors.textSub, marginBottom: spacing.lg },
   sectionHeader: { fontSize: 11, fontWeight: '700', color: colors.textMuted, letterSpacing: 1, marginTop: spacing.lg, marginBottom: spacing.sm },
-  songRow: { flexDirection: 'row', alignItems: 'flex-start', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  songRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  progressBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  progressBtnText: { fontSize: 18 },
   songName: { fontSize: 14, fontWeight: '600', color: colors.text },
   badge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 },
   badgeLearning: { backgroundColor: colors.accentDim },

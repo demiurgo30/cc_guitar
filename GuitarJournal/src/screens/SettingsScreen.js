@@ -9,6 +9,7 @@ import { showAlert } from '../utils/alert';
 const ITEMS = [
   { key: 'Durations', label: 'Durations', desc: 'Manage quick-pick session lengths', icon: '⏱️' },
   { key: 'Techniques', label: 'Techniques', desc: 'Manage technique tags for logging', icon: '🎼' },
+  { key: 'Reminders', label: 'Reminders', desc: 'Get nudged if you haven\'t practiced today', icon: '🔔' },
 ];
 
 function downloadJson(obj, filename) {
