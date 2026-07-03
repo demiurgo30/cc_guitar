@@ -39,8 +39,9 @@ export async function getSessions() {
 
 export async function addSession(session) {
   const list = await getSessions();
-  const entry = { ...session, id: Date.now().toString(), date: new Date().toISOString() };
-  await save(KEYS.sessions, [entry, ...list]);
+  const entry = { ...session, id: Date.now().toString(), date: session.date ?? new Date().toISOString() };
+  const sorted = [entry, ...list].sort((a, b) => b.date.localeCompare(a.date));
+  await save(KEYS.sessions, sorted);
   return entry;
 }
 

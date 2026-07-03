@@ -21,7 +21,29 @@ function TagPill({ label, active, onPress }) {
   );
 }
 
+function toDateKey(d) {
+  const y = d.getFullYear(), m = (d.getMonth() + 1).toString().padStart(2, '0'), day = d.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function isSameDay(a, b) {
+  return toDateKey(a) === toDateKey(b);
+}
+
+const webDateInputStyle = {
+  marginTop: 10,
+  backgroundColor: colors.surfaceAlt,
+  color: colors.text,
+  border: 'none',
+  borderRadius: 8,
+  padding: 8,
+  fontSize: 14,
+  fontFamily: 'inherit',
+  colorScheme: 'dark',
+};
+
 export default function LogSessionScreen({ navigation }) {
+  const [sessionDate, setSessionDate] = useState(() => new Date());
   const [duration, setDuration] = useState(30);
   const [customDuration, setCustomDuration] = useState('');
   const [showCustom, setShowCustom] = useState(false);
@@ -55,9 +77,17 @@ export default function LogSessionScreen({ navigation }) {
     setNewSong('');
   };
 
+  const handleDateInputChange = dateStr => {
+    if (!dateStr) return;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const now = new Date();
+    setSessionDate(new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()));
+  };
+
   const save = async () => {
     const mins = showCustom ? parseInt(customDuration, 10) || duration : duration;
     const session = {
+      date: sessionDate.toISOString(),
       durationMinutes: mins,
       songs: selectedSongs,
       techniques: selectedTechniques,
@@ -79,6 +109,7 @@ export default function LogSessionScreen({ navigation }) {
     ]);
 
     // reset form
+    setSessionDate(new Date());
     setDuration(durationPresets[1] ?? durationPresets[0] ?? 30);
     setSelectedSongs([]); setSelectedTechniques([]);
     setNextTime(''); setTeacherQ(''); setShowCustom(false); setCustomDuration('');
@@ -90,7 +121,35 @@ export default function LogSessionScreen({ navigation }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Log Session</Text>
-        <Text style={styles.subtitle}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+        <Text style={styles.subtitle}>{sessionDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+
+        <SectionHeader title="Date" />
+        <Card>
+          <View style={styles.durationRow}>
+            <TouchableOpacity
+              style={[styles.durBtn, isSameDay(sessionDate, new Date()) && styles.durBtnActive]}
+              onPress={() => setSessionDate(new Date())}
+            >
+              <Text style={[styles.durBtnText, isSameDay(sessionDate, new Date()) && styles.durBtnTextActive]}>Today</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.durBtn, isSameDay(sessionDate, new Date(Date.now() - 86400000)) && styles.durBtnActive]}
+              onPress={() => setSessionDate(new Date(Date.now() - 86400000))}
+            >
+              <Text style={[styles.durBtnText, isSameDay(sessionDate, new Date(Date.now() - 86400000)) && styles.durBtnTextActive]}>Yesterday</Text>
+            </TouchableOpacity>
+          </View>
+          {Platform.OS === 'web' && (
+            // eslint-disable-next-line react/no-unknown-property
+            <input
+              type="date"
+              value={toDateKey(sessionDate)}
+              max={toDateKey(new Date())}
+              onChange={e => handleDateInputChange(e.target.value)}
+              style={webDateInputStyle}
+            />
+          )}
+        </Card>
 
         <SectionHeader title="Duration" />
         <Card>
