@@ -41,7 +41,12 @@ export default function SongDetailScreen({ route }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{song.name}</Text>
-      <Text style={styles.subtitle}>{song.status === 'learned' ? 'Learned' : 'Learning'}</Text>
+      {song.author ? <Text style={styles.author}>by {song.author}</Text> : null}
+      <View style={styles.subtitleRow}>
+        <Text style={styles.subtitle}>{song.status === 'learned' ? 'Learned' : 'Learning'}</Text>
+        {song.amebLevel ? <Text style={styles.subtitleDot}>·</Text> : null}
+        {song.amebLevel ? <Text style={styles.subtitle}>{song.amebLevel}</Text> : null}
+      </View>
 
       <SectionHeader title="Current ratings" />
       <Card>
@@ -69,7 +74,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: 48 },
   title: { fontSize: 22, fontWeight: '700', color: colors.text, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: colors.textSub, marginBottom: spacing.lg },
+  author: { fontSize: 13, color: colors.textSub, fontStyle: 'italic', marginBottom: 4 },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.lg },
+  subtitle: { fontSize: 13, color: colors.textSub },
+  subtitleDot: { fontSize: 13, color: colors.textMuted },
   ratingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   ratingLabel: { fontSize: 14, color: colors.textSub },
   chartCard: { alignItems: 'center' },

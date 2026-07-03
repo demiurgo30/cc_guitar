@@ -11,6 +11,7 @@ import { showAlert } from '../utils/alert';
 
 const DIMS = ['speed', 'changes', 'musicality'];
 const DIM_LABELS = { speed: 'Speed', changes: 'Changes', musicality: 'Musicality' };
+const AMEB_LEVELS = ['Preliminary', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'AMusA', 'LMusA', 'FMusA'];
 
 function Stars({ value, max = 5, onPress }) {
   return (
@@ -26,6 +27,8 @@ function Stars({ value, max = 5, onPress }) {
 
 function SongModal({ visible, song, onClose, onSave }) {
   const [name, setName] = useState(song?.name ?? '');
+  const [author, setAuthor] = useState(song?.author ?? '');
+  const [amebLevel, setAmebLevel] = useState(song?.amebLevel ?? '');
   const [status, setStatus] = useState(song?.status ?? 'learning');
   const [speed, setSpeed] = useState(song?.speed ?? 0);
   const [changes, setChanges] = useState(song?.changes ?? 0);
@@ -34,18 +37,27 @@ function SongModal({ visible, song, onClose, onSave }) {
   React.useEffect(() => {
     if (song) {
       setName(song.name ?? '');
+      setAuthor(song.author ?? '');
+      setAmebLevel(song.amebLevel ?? '');
       setStatus(song.status ?? 'learning');
       setSpeed(song.speed ?? 0);
       setChanges(song.changes ?? 0);
       setMusicality(song.musicality ?? 0);
     } else {
-      setName(''); setStatus('learning'); setSpeed(0); setChanges(0); setMusicality(0);
+      setName(''); setAuthor(''); setAmebLevel(''); setStatus('learning'); setSpeed(0); setChanges(0); setMusicality(0);
     }
   }, [song, visible]);
 
   const handleSave = () => {
     if (!name.trim()) { showAlert('Name required'); return; }
-    onSave({ ...song, id: song?.id ?? Date.now().toString(), name: name.trim(), status, speed, changes, musicality });
+    onSave({
+      ...song,
+      id: song?.id ?? Date.now().toString(),
+      name: name.trim(),
+      author: author.trim(),
+      amebLevel,
+      status, speed, changes, musicality,
+    });
   };
 
   return (
@@ -54,8 +66,26 @@ function SongModal({ visible, song, onClose, onSave }) {
         <View style={ms.sheet}>
           <Text style={ms.title}>{song?.id ? 'Edit Song' : 'Add Song'}</Text>
 
+          <ScrollView style={ms.scroll} keyboardShouldPersistTaps="handled">
+
           <Text style={ms.label}>Name</Text>
           <TextInput style={ms.input} value={name} onChangeText={setName} placeholder="Song or exercise name" placeholderTextColor={colors.placeholder} />
+
+          <Text style={ms.label}>Author</Text>
+          <TextInput style={ms.input} value={author} onChangeText={setAuthor} placeholder="Composer or artist" placeholderTextColor={colors.placeholder} />
+
+          <Text style={ms.label}>AMEB Level</Text>
+          <View style={ms.levelWrap}>
+            {AMEB_LEVELS.map(lvl => (
+              <TouchableOpacity
+                key={lvl}
+                style={[ms.levelChip, amebLevel === lvl && ms.levelChipActive]}
+                onPress={() => setAmebLevel(amebLevel === lvl ? '' : lvl)}
+              >
+                <Text style={[ms.levelChipText, amebLevel === lvl && ms.levelChipTextActive]}>{lvl}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={ms.label}>Status</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
@@ -76,6 +106,8 @@ function SongModal({ visible, song, onClose, onSave }) {
               </View>
             );
           })}
+
+          </ScrollView>
 
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
             <TouchableOpacity style={[ms.btn, ms.btnSecondary]} onPress={onClose}>
@@ -130,15 +162,21 @@ export default function SongsScreen({ navigation }) {
               {list.map((song, i) => (
                 <View key={song.id} style={[styles.songRow, i === list.length - 1 && { borderBottomWidth: 0 }]}>
                   <TouchableOpacity style={{ flex: 1 }} onPress={() => openEdit(song)} onLongPress={() => handleDelete(song.id)}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: song.author ? 2 : 6, flexWrap: 'wrap' }}>
                       <Text style={styles.songName}>{song.name}</Text>
                       <View style={[styles.badge, song.status === 'learned' ? styles.badgeLearned : styles.badgeLearning]}>
                         <Text style={[styles.badgeText, song.status === 'learned' ? styles.badgeLearnedText : styles.badgeLearningText]}>
                           {song.status}
                         </Text>
                       </View>
+                      {song.amebLevel ? (
+                        <View style={styles.levelBadge}>
+                          <Text style={styles.levelBadgeText}>{song.amebLevel}</Text>
+                        </View>
+                      ) : null}
                     </View>
-                    <View style={styles.masteryRow}>
+                    {song.author ? <Text style={styles.songAuthor}>by {song.author}</Text> : null}
+                    <View style={[styles.masteryRow, { marginTop: 6 }]}>
                       {DIMS.map(dim => (
                         <View key={dim} style={styles.masteryItem}>
                           <Stars value={song[dim] ?? 0} />
@@ -187,6 +225,9 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 10, fontWeight: '600' },
   badgeLearningText: { color: colors.accentLight },
   badgeLearnedText: { color: colors.green },
+  levelBadge: { borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border },
+  levelBadgeText: { fontSize: 10, fontWeight: '600', color: colors.textSub },
+  songAuthor: { fontSize: 12, color: colors.textSub, fontStyle: 'italic' },
   masteryRow: { flexDirection: 'row', gap: spacing.lg },
   masteryItem: { alignItems: 'flex-start' },
   dimLabel: { fontSize: 9, color: colors.textMuted, marginTop: 2 },
@@ -197,10 +238,16 @@ const styles = StyleSheet.create({
 
 const ms = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.xl, paddingBottom: 40 },
+  sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.xl, paddingBottom: 40, maxHeight: '85%' },
+  scroll: { maxHeight: 420 },
   title: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: spacing.lg },
   label: { fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
   input: { backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, padding: spacing.sm, color: colors.text, fontSize: 15, marginBottom: spacing.md },
+  levelWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.md },
+  levelChip: { backgroundColor: colors.surfaceAlt, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6 },
+  levelChipActive: { backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accentBorder },
+  levelChipText: { fontSize: 12, color: colors.textSub },
+  levelChipTextActive: { color: colors.accentLight, fontWeight: '600' },
   statusBtn: { flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: radius.sm, padding: spacing.sm, alignItems: 'center' },
   statusBtnActive: { backgroundColor: colors.accentDim, borderWidth: 1, borderColor: colors.accentBorder },
   statusText: { color: colors.textSub, fontWeight: '600' },
