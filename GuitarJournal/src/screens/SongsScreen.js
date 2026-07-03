@@ -11,7 +11,7 @@ import { showAlert } from '../utils/alert';
 
 const DIMS = ['speed', 'changes', 'musicality'];
 const DIM_LABELS = { speed: 'Speed', changes: 'Changes', musicality: 'Musicality' };
-const AMEB_LEVELS = ['Preliminary', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'AMusA', 'LMusA', 'FMusA'];
+const AMEB_LEVELS = ['Preliminary', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'];
 
 function Stars({ value, max = 5, onPress }) {
   return (
