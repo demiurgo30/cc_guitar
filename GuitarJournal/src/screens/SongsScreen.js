@@ -6,24 +6,12 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { getSongs, upsertSong, deleteSong } from '../storage';
 import Card from '../components/Card';
+import Stars from '../components/Stars';
 import { colors, spacing, radius } from '../theme';
 import { showAlert } from '../utils/alert';
+import { DIMS, DIM_LABELS } from '../utils/songDims';
 
-const DIMS = ['speed', 'changes', 'musicality'];
-const DIM_LABELS = { speed: 'Speed', changes: 'Changes', musicality: 'Musicality' };
 const AMEB_LEVELS = ['Preliminary', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'];
-
-function Stars({ value, max = 5, onPress }) {
-  return (
-    <View style={{ flexDirection: 'row', gap: 2 }}>
-      {Array.from({ length: max }).map((_, i) => (
-        <TouchableOpacity key={i} onPress={() => onPress && onPress(i + 1)} disabled={!onPress}>
-          <Text style={{ fontSize: 14, color: i < value ? colors.accentLight : colors.border }}>★</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-}
 
 function SongModal({ visible, song, onClose, onSave }) {
   const [name, setName] = useState(song?.name ?? '');

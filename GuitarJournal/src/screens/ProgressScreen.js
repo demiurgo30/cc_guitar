@@ -8,12 +8,7 @@ import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import Heatmap from '../components/Heatmap';
 import { colors, spacing, radius } from '../theme';
-
-function fmtMinutes(m) {
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60), min = m % 60;
-  return min ? `${h}h ${min}m` : `${h}h`;
-}
+import { fmtMinutes } from '../utils/format';
 
 export default function ProgressScreen() {
   const [sessions, setSessions] = useState([]);

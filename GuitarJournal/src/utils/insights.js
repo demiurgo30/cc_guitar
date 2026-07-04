@@ -29,6 +29,8 @@ export function computeSummary(sessions, songs, { rangeDays } = { rangeDays: 7 }
     const inWindow = history.filter(h => h.date >= cutoff);
     if (inWindow.length === 0) continue;
     const before = [...history].reverse().find(h => h.date < cutoff);
+    // If there's no snapshot from before the window, measure the gain from
+    // the earliest in-window point instead of assuming a zero baseline.
     const baseline = before ?? inWindow[0];
     const latest = inWindow[inWindow.length - 1];
     const gain = (latest.speed + latest.changes + latest.musicality) - (baseline.speed + baseline.changes + baseline.musicality);

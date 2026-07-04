@@ -6,10 +6,7 @@ import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
 import { showAlert } from '../utils/alert';
-
-function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
+import { fmtDate } from '../utils/format';
 
 export default function LessonModeScreen({ navigation }) {
   const [sessions, setSessions] = useState([]);

@@ -5,20 +5,9 @@ import { getSongs } from '../storage';
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import LineChart from '../components/LineChart';
-import { colors, spacing, radius } from '../theme';
-
-const DIMS = ['speed', 'changes', 'musicality'];
-const DIM_LABELS = { speed: 'Speed', changes: 'Changes', musicality: 'Musicality' };
-
-function Stars({ value, max = 5 }) {
-  return (
-    <View style={{ flexDirection: 'row', gap: 2 }}>
-      {Array.from({ length: max }).map((_, i) => (
-        <Text key={i} style={{ fontSize: 16, color: i < value ? colors.accentLight : colors.border }}>★</Text>
-      ))}
-    </View>
-  );
-}
+import Stars from '../components/Stars';
+import { colors, spacing } from '../theme';
+import { DIMS, DIM_LABELS } from '../utils/songDims';
 
 export default function SongDetailScreen({ route }) {
   const { songId } = route.params;
@@ -53,7 +42,7 @@ export default function SongDetailScreen({ route }) {
         {DIMS.map(dim => (
           <View key={dim} style={styles.ratingRow}>
             <Text style={styles.ratingLabel}>{DIM_LABELS[dim]}</Text>
-            <Stars value={song[dim] ?? 0} />
+            <Stars value={song[dim] ?? 0} size={16} />
           </View>
         ))}
       </Card>

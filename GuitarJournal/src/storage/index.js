@@ -45,11 +45,6 @@ export async function addSession(session) {
   return entry;
 }
 
-export async function deleteSession(id) {
-  const list = await getSessions();
-  await save(KEYS.sessions, list.filter(s => s.id !== id));
-}
-
 // ── songs ─────────────────────────────────────────────────────────
 
 export async function getSongs() {
@@ -63,6 +58,8 @@ export async function upsertSong(song) {
 
   if (idx >= 0) {
     const prev = list[idx];
+    // Only record a history point when a rating actually changed, so editing
+    // name/author/status alone doesn't pollute the progress chart.
     const ratingsChanged = prev.speed !== song.speed || prev.changes !== song.changes || prev.musicality !== song.musicality;
     const history = prev.history ?? [];
     list[idx] = {
@@ -273,13 +270,6 @@ export function totalMinutesThisWeek(sessions) {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
   return sessions
     .filter(s => s.date >= weekAgo)
-    .reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
-}
-
-export function totalMinutesThisMonth(sessions) {
-  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-  return sessions
-    .filter(s => s.date >= monthAgo)
     .reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
 }
 

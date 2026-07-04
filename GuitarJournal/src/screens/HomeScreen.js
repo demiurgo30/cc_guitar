@@ -7,21 +7,7 @@ import { getSessions, getSongs, getGoals, getLastLessonReviewedAt, computeStreak
 import Card from '../components/Card';
 import SectionHeader from '../components/SectionHeader';
 import { colors, spacing, radius } from '../theme';
-
-function fmtMinutes(m) {
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60), min = m % 60;
-  return min ? `${h}h ${min}m` : `${h}h`;
-}
-
-function fmtDate(iso) {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
+import { fmtMinutes, fmtDate } from '../utils/format';
 
 export default function HomeScreen({ navigation }) {
   const [sessions, setSessions] = useState([]);
@@ -114,7 +100,7 @@ export default function HomeScreen({ navigation }) {
           <SectionHeader title="Last session" />
           <Card>
             <View style={styles.row}>
-              <Text style={styles.histDate}>{fmtDate(lastSession.date)}</Text>
+              <Text style={styles.histDate}>{fmtDate(lastSession.date, { relative: true })}</Text>
               <Text style={styles.histDur}>{fmtMinutes(lastSession.durationMinutes ?? 0)}</Text>
             </View>
             {lastSession.songs?.length > 0 && (

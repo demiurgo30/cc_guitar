@@ -5,6 +5,8 @@ import { colors, spacing } from '../theme';
 const CELL = 12;
 const GAP = 3;
 
+// Buckets are just visual thresholds to spread typical session lengths
+// (15/30/45/60+ min) across the 5-color scale, not a meaningful unit.
 function levelFor(minutes) {
   if (minutes <= 0) return 0;
   if (minutes < 20) return 1;

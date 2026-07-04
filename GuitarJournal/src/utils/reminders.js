@@ -4,6 +4,8 @@ import {
   getReminderSettings, getSessions, getLastReminderShownDate, setLastReminderShownDate,
 } from '../storage';
 
+// Polls once a minute since there's no native scheduled-notification API on
+// web — this is the coarsest interval that still hits the target minute reliably.
 const CHECK_INTERVAL_MS = 60 * 1000;
 
 export function notificationsSupported() {
